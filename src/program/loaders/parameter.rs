@@ -9,7 +9,7 @@ pub struct Parameter(serde_json::Value);
 
 impl Parameter {
   pub fn from_slice(slice: &[u8]) -> Result<Self> {
-    Ok(serde_json::from_slice::<Parameter>(slice)?)
+    Ok(serde_json::from_slice(slice)?)
   }
 }
 
@@ -18,7 +18,7 @@ impl FromFile for Parameter {
   where
     P: AsRef<Path>,
   {
-    Ok(serde_json::from_reader::<File, Parameter>(File::open(path)?)?)
+    Ok(serde_json::from_reader(File::open(path)?)?)
   }
 }
 
@@ -26,7 +26,7 @@ impl FromStr for Parameter {
   type Err = Error;
 
   fn from_str(text: &str) -> Result<Self> {
-    Ok(serde_json::from_str::<Parameter>(text)?)
+    Ok(serde_json::from_str(text)?)
   }
 }
 

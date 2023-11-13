@@ -10,7 +10,7 @@ impl FromStr for Path {
 
   fn from_str(path: &str) -> Result<Self> {
     Ok(Self(
-      Regex::new(include_str!("../../../data/openai-openapi-paths-regex"))?
+      Regex::new(include_str!("../../../assets/openai-openapi-paths-regex"))?
         .find(path)
         .ok_or(Error::msg("Invalid format of OpenAI API key"))?
         .as_str()
