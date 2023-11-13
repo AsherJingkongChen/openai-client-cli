@@ -1,54 +1,46 @@
-use crate::{Entry, Error, Result, traits::*};
+use crate::{Entry, Result, traits::*};
 use std::{fs::File, path::Path, io::{stdout, Write}};
-use tracing::info;
+use tracing::{debug, info};
 
-pub struct Output(Box<dyn Write>);
+/// The output channel.
+pub struct Output(Box<dyn Write>, bool);
+
+impl Output {
+  /// Check if the output channel is a file; otherwise, it is stdout.
+  pub fn is_file(&self) -> bool {
+    self.1
+  }
+
+  fn post_fetch_ok(self, target: &str) -> Result<Self> {
+    info!("Successfully fetched the output channel into {target}");
+    Ok(self)
+  }
+}
 
 impl FromFile for Output {
   fn from_file<P>(path: P) -> Result<Self>
   where
     P: AsRef<Path>,
   {
-    Ok(Self(Box::new(File::create(path)?)))
+    Ok(Self(Box::new(File::create(path)?), true))
   }
 }
 
 impl Loader<Box<dyn Write>> for Output {
   fn fetch(entry: &Entry) -> Result<Self> {
-    let target_message =  entry.output_file
-      .as_ref()
-      .map_or(String::new(), |path| format!(" to the file {:?}", path));
-
-    match entry.output_file
-      .as_ref()
-      .ok_or(Error::msg("Not provided"))
-      .and_then(Output::from_file)
-    {
-      Ok(output) => {
-        info!("Created the output channel{target_message}");
-        return Ok(output);
-      },
-      Err(err) => info!(
-        "Failed to create the output channel{target_message}: {err:?}"
-      ),
+    if let Some(path) = entry.output_file.as_ref() {
+      let target = &format!("the file {path:?}");
+      match Output::from_file(path) {
+        Ok(output) => return output.post_fetch_ok(target),
+        Err(err) => debug!("Failed to create the output channel into {target}: {err:?}"),
+      }
     }
-
-    info!("Piped the output channel to stdout");
-    Ok(Self(Box::new(stdout())))
+    Self(Box::new(stdout()), false).post_fetch_ok("stdout")
   }
   fn value(self) -> Box<dyn Write> {
     self.0
   }
   fn value_ref(&self) -> &Box<dyn Write> {
     &self.0
-  }
-}
-
-impl<W> From<W> for Output
-where
-  W: 'static + Write,
-{
-  fn from(writer: W) -> Self {
-    Self(Box::new(writer))
   }
 }

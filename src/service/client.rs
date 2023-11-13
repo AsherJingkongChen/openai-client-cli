@@ -6,15 +6,19 @@ use reqwest::{
 };
 use tracing::info;
 
+/// The client to send the OpenAI API requests.
 pub struct OpenAIClient {
-  pub key: Key,
-  pub organization: Option<Organization>,
+  key: Key,
+  organization: Option<Organization>,
 }
 
 impl OpenAIClient {
+  /// Create a new client.
   pub fn new(key: Key, organization: Option<Organization>) -> Self {
     Self { key, organization }
   }
+
+  /// Send a request to the OpenAI API and receive the response.
   pub async fn send(&self, request: OpenAIRequest) -> Result<Response> {
     let method = request.method.value();
     let url = request.url;
@@ -28,7 +32,7 @@ impl OpenAIClient {
 
     let client = ReqwestClient::new();
 
-    info!("Sending request to {}", url);
+    info!("Sending request to {:?}", url.to_string());
     let mut request = client.request(method, url);
     request = request.header(AUTHORIZATION, authorization);
     if let Some(organization) = organization {
@@ -38,7 +42,7 @@ impl OpenAIClient {
       request = request.json(body);
     }
     let response = request.send().await?;
-    info!("Received the API response: {:#?}", response.status());
+    info!("Received the API response: {}", response.status());
     Ok(response)
   }
 }

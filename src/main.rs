@@ -1,4 +1,4 @@
-use openai_cli::entry::*;
+use openai_client_cli::entry::*;
 use std::{process::exit, env::args_os};
 use tracing::error;
 

@@ -1,8 +1,9 @@
 use crate::{Entry, Error, Result, traits::*};
 use std::str::FromStr;
 use regex::Regex;
-use tracing::info;
+use tracing::{debug, info};
 
+/// The API request path.
 pub struct Path(String);
 
 impl FromStr for Path {
@@ -21,13 +22,20 @@ impl FromStr for Path {
 
 impl Loader<String> for Path {
   fn fetch(entry: &Entry) -> Result<Self> {
+    let source = "the command line arguments";
     match Path::from_str(&entry.path) {
-      Ok(method) => return Ok(method),
-      Err(err) => info!(
-        "Failed to obtain the API request path from command line arguments: {err:?}"
-      ),
+      Ok(path) => {
+        info!(
+          "Successfully fetched the API request path from {source}: {:?}",
+          path.value_ref(),
+        );
+        Ok(path)
+      },
+      Err(err) => {
+        debug!("Failed to obtain the API request path from {source}: {err:?}");
+        Err(Error::msg("Failed to fetch the API request path"))
+      },
     }
-    Err(Error::msg("Failed to fetch the API request path"))
   }
   fn value(self) -> String {
     self.0

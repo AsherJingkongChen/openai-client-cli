@@ -6,8 +6,11 @@ use http::header::CONTENT_TYPE;
 use std::path::PathBuf;
 use std::io::stderr;
 use tracing::{debug, info, Level};
+
+#[doc(hidden)]
 pub use clap::Parser;
 
+/// The main entry-point for the program.
 #[derive(Parser)]
 #[command(
   about,
@@ -27,15 +30,16 @@ pub use clap::Parser;
   next_line_help = true,
 )]
 pub struct Entry {
+  /// The file path where the API key is stored.
   #[arg(
     help = "\
 The file path where the API key is stored.
 The program will attempt the following steps to obtain a valid API key:
  1. Read the file from the provided path <KEY_FILE_PATH>.
- 2. Read the file from the default paths in the following order:
+ 2. Read the environment variable `OPENAI_API_KEY`.
+ 3. Read the file from the default paths in the following order:
     `openai.env`, `.openai_profile`, `.env`,
     `~/openai.env`, `~/.openai_profile` or `~/.env`.
- 3. Read the environment variable `OPENAI_API_KEY`.
  4. Exit the program with a non-zero return code.
 ",
     long,
@@ -44,12 +48,13 @@ The program will attempt the following steps to obtain a valid API key:
   )]
   pub key_file: Option<PathBuf>,
 
+  /// The HTTP method used for the API request.
   #[arg(
     help = "\
 The HTTP method used for the API request.
 The program will attempt the following steps to determine a valid HTTP method:
- 1. Read the argument value <METHOD>.
- 2. If the `parameter` object is fetched successfully from either
+ 1. Read the argument <METHOD>.
+ 2. If the `parameter` object is successfully fetched from either
     <PARAM_FILE_PATH> or one of the default paths, set <METHOD> to `POST`.
  3. Otherwise, set <METHOD> to `GET`.
 ",
@@ -59,16 +64,17 @@ The program will attempt the following steps to determine a valid HTTP method:
   )]
   pub method: Option<String>,
 
+  /// The file path where the organization ID is stored.
   #[arg(
     help = "\
 The file path where the organization ID is stored.
 The program will attempt the following steps to obtain a valid organization ID:
  1. Read the file from the provided path <ORG_FILE_PATH>.
  2. Read the file from provided path of key file <KEY_FILE_PATH>.
- 3. Read the file from the default paths in the following order:
+ 3. Read the environment variable `OPENAI_ORG_KEY`.
+ 4. Read the file from the default paths in the following order:
     `openai.env`, `.openai_profile`, `.env`,
     `~/openai.env`, `~/.openai_profile` or `~/.env`.
- 4. Read the environment variable `OPENAI_ORG_KEY`.
  5. Ignore the field and leave it empty.
 ",
     short = 'g',
@@ -77,6 +83,7 @@ The program will attempt the following steps to obtain a valid organization ID:
   )]
   pub organization_file: Option<PathBuf>,
 
+  /// The file path where the API response will be stored.
   #[arg(
     help = "\
 The file path where the API response will be stored.
@@ -91,6 +98,7 @@ The program will attempt the following steps to successfully store the response:
   )]
   pub output_file: Option<PathBuf>,
 
+  /// The file path where the API request parameters (body) are stored in JSON format.
   #[arg(
     help = "\
 The file path where the API request parameters (body) are stored in JSON format.
@@ -107,9 +115,11 @@ The program will attempt the following steps to obtain a valid parameter object:
   )]
   pub parameter_file: Option<PathBuf>,
 
+  /// Hidden.
   #[arg(hide = true, long, exclusive = true)]
-  pub parameter: Option<Parameter>,
+  pub _parameter: Option<Parameter>,
 
+  /// The API request path. (part of the URL)
   #[arg(
     help = "\
 The API request path. (part of the URL)
@@ -120,10 +130,11 @@ For example, the extracted strings will be the same when <PATH> is either
   )]
   pub path: String,
 
+  /// Switch for verbose logging mode.
   #[arg(
     default_value = "false",
     help = "\
-Enable verbose logging mode. This mode is useful for debugging purposes.
+Switch for verbose logging mode. This mode is useful for debugging purposes.
 It is disabled by default.
 ",
     long,
@@ -133,6 +144,7 @@ It is disabled by default.
 }
 
 impl Entry {
+  /// Run the program.
   pub async fn run(mut self) -> Result<()> {
     let logger = tracing_subscriber::fmt()
       .with_target(false)
@@ -151,42 +163,22 @@ impl Entry {
     }
 
     let key = Key::fetch(&self)?;
-    info!(
-      "Fetched the API key: {:?}",
-      format!("{}...{}", &key.value_ref()[..6], &key.value_ref()[49..]),
-    );
-
     let organization = Organization::fetch(&self).ok();
-    match &organization {
-      Some(organization) => info!(
-        "Fetched the organization ID: {:?}",
-        format!("{}...{}", &organization.value_ref()[..7], &organization.value_ref()[26..]),
-      ),
-      None => info!("Ignored the field `organization` for not being fetched successfully"),
+    if organization.is_none() {
+      info!("Ignored the field `organization` for not being fetched successfully");
     }
-
     let output = Output::fetch(&self)?;
-    info!("Fetched the output channel");
-
-    let path = Path::fetch(&self)?;
-    info!("Fetched the API request path: {:?}", path.value_ref());
-
     // `parameter` should be fetched before `method`
     let parameter = Parameter::fetch(&self).ok();
-    match &parameter {
-      Some(parameter) => info!(
-        "Fetched the API request parameters: <JSON Object ({} bytes)>",
-        serde_json::to_vec(&parameter)?.len(),
-      ),
-      None => info!("Ignored the field `parameter` for not being fetched successfully"),
+    if parameter.is_none() {
+      info!("Ignored the field `parameter` for not being fetched successfully");
     }
-    self.parameter = parameter;
-
+    self._parameter = parameter;
+    let path = Path::fetch(&self)?;
     let method = Method::fetch(&self)?;
-    info!("Fetched the API request method: {:?}", method.value_ref());
 
     let client = OpenAIClient::new(key, organization);
-    let request = OpenAIRequest::new(method, path, self.parameter)?;
+    let request = OpenAIRequest::new(method, path, self._parameter)?;
     let response = client.send(request).await?;
     debug!("\n{:#?}", response);
 
@@ -194,11 +186,18 @@ impl Entry {
     let content_type = response
       .headers()
       .get(CONTENT_TYPE)
-      .ok_or(Error::msg("The API response does not contain the header `Content-Type`"))?;
-    info!("Resolve the API response content type: {:?}", content_type.to_str());
+      .ok_or(Error::msg("The API response does not contain the header `Content-Type`"))?
+      .to_str()
+      .unwrap_or("unknown");
+    info!(
+      "Resolving the API response in the content type: {:?}",
+      content_type,
+    );
 
-    match content_type.as_bytes() {
-      b"application/json" => {
+    let output_target = if output.is_file() { "the file" } else { "stdout" };
+
+    match content_type {
+      "application/json" => {
         let response_json = response
           .json::<serde_json::Value>()
           .await
@@ -208,11 +207,15 @@ impl Entry {
               .map_err(Error::from)
           });
         if let Ok(response_json) = &response_json {
-          info!("Resolved the API response: <JSON Object ({} bytes)>", response_json.len());
+          info!(
+            "Resolved the API response: <JSON Object ({} bytes)>",
+            response_json.len(),
+          );
         }
 
         if response_json.is_err() || status_error.is_err() {
-          Err(Error::msg("\x1b[F")
+          Err(
+            Error::msg("\u{1b}[F")
               .context(response_json.map_or_else(
                 |e| e.to_string(),
                 |json| format!("The API response in JSON format:\n{}", json)),
@@ -225,16 +228,16 @@ impl Entry {
           )
         } else {
           let response_json = response_json.unwrap();
-          info!("Exporting the output");
-          output.value().write_all(response_json.as_bytes())?;
+          let mut output = output.value();
+          info!("Exporting the output to {output_target}");
+          output.write_all(response_json.as_bytes())?;
           Ok(())
         }
       },
-      b"text/event-stream" => {
+      "text/event-stream" => {
         status_error?; // should not be an error
 
-        info!("Resolving the API response and exporting the output");
-
+        info!("Exporting the output to {output_target}");
         let mut stream = response.bytes_stream().eventsource();
         let mut output = output.value();
         while let Some(chunk) = stream.next().await {
@@ -245,14 +248,19 @@ impl Entry {
             data.len(),
           );
           if data == "[DONE]" {
-            info!("Read the end of the API response: {}", data);
+            info!("Reached the end of the API response");
             break;
+          }
+          if chunk.retry.is_some() {
+            return Err(Error::msg("Failed to resolve API response: Retry occurred"));
           }
           output.write_all(&[data.as_bytes(), b"\n"].concat())?;
         }
         Ok(())
       },
-      _ => Err(Error::msg("Failed to resolve API response: Invalid format")),
+      unknown_type => Err(Error::msg(format!(
+        "Failed to resolve API response: {unknown_type:?} is an invalid format"
+      ))),
     }
   }
 }

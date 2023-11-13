@@ -2,9 +2,20 @@ use crate::{Entry, Error, Result, traits::*};
 use regex::Regex;
 use shellexpand::path::tilde;
 use std::{env, fs, path::{Path, PathBuf}, str::FromStr};
-use tracing::info;
+use tracing::{debug, info};
 
+/// The API key.
 pub struct Key(String);
+
+impl Key {
+  fn post_fetch_ok(self, source: &str) -> Result<Self> {
+    info!(
+      "Successfully fetched the API key from {source}: {:?}",
+      format!("{}...{}", &self.value_ref()[..6], &self.value_ref()[49..]),
+    );
+    Ok(self)
+  }
+}
 
 impl FromFile for Key {
   fn from_file<P>(path: P) -> Result<Self>
@@ -32,34 +43,37 @@ impl FromStr for Key {
 
 impl Loader<String> for Key {
   fn fetch(entry: &Entry) -> Result<Self> {
-    let mut provided_files = Vec::new();
-    if let Some(key_file) = entry.key_file.as_ref() {
-      provided_files.push(key_file);
-    }
-    let default_files = [
-      &PathBuf::from("openai.env"),
-      &PathBuf::from(".openai_profile"),
-      &PathBuf::from(".env"),
-      &PathBuf::from(tilde("~/openai.env")),
-      &PathBuf::from(tilde("~/.openai_profile")),
-      &PathBuf::from(tilde("~/.env")),
-    ];
-    for file in provided_files.into_iter().chain(default_files.into_iter()) {
-      match Key::from_file(file) {
-        Ok(key) => return Ok(key),
-        Err(err) => info!(
-          "Failed to obtain the API key from the file {file:?}: {err:?}"
-        ),
+    if let Some(provided_file) = entry.key_file.as_ref() {
+      let source = &format!("the provided file {provided_file:?}");
+      match Key::from_file(provided_file) {
+        Ok(key) => return key.post_fetch_ok(source),
+        Err(err) => debug!("Failed to obtain the API key from {source}: {err:?}"),
       }
     }
+
+    let source = "the environment variable `OPENAI_API_KEY`";
     match env::var("OPENAI_API_KEY")
       .map_err(Error::from)
       .and_then(Key::try_from)
     {
-      Ok(key) => return Ok(key),
-      Err(err) => info!(
-        "Failed to obtain the API key from the variable `OPENAI_API_KEY`: {err:?}"
-      ),
+      Ok(key) => return key.post_fetch_ok(source),
+      Err(err) => debug!("Failed to obtain the API key from {source}: {err:?}"),
+    }
+
+    for default_file in [
+        &PathBuf::from("openai.env"),
+        &PathBuf::from(".openai_profile"),
+        &PathBuf::from(".env"),
+        &PathBuf::from(tilde("~/openai.env")),
+        &PathBuf::from(tilde("~/.openai_profile")),
+        &PathBuf::from(tilde("~/.env")),
+      ].into_iter()
+    {
+      let source = &format!("the default file {default_file:?}");
+      match Key::from_file(default_file) {
+        Ok(key) => return key.post_fetch_ok(source),
+        Err(err) => debug!("Failed to obtain the API key from {source}: {err:?}"),
+      }
     }
     Err(Error::msg("Failed to fetch the API key"))
   }

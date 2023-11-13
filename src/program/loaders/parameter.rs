@@ -1,15 +1,26 @@
 use crate::{Entry, Error, Result, traits::*};
 use serde::{Deserialize, Serialize};
 use std::{fs::File, path::Path, str::FromStr};
-use tracing::info;
+use tracing::{debug, info};
 
+/// The API request parameters.
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(transparent)]
 pub struct Parameter(serde_json::Value);
 
 impl Parameter {
+  /// Create a new parameter object from bytes of JSON.
   pub fn from_slice(slice: &[u8]) -> Result<Self> {
     Ok(serde_json::from_slice(slice)?)
+  }
+
+  fn post_fetch_ok(self, source: &str) -> Result<Self> {
+    info!(
+      "Successfully fetched the API request parameters from {}: <JSON Object ({} bytes)>",
+      source,
+      self.value_ref().to_string().len(),
+    );
+    Ok(self)
   }
 }
 
@@ -32,24 +43,22 @@ impl FromStr for Parameter {
 
 impl Loader<serde_json::Value> for Parameter {
   fn fetch(entry: &Entry) -> Result<Self> {
-    let mut provided_files = Vec::new();
-    if let Some(parameter_file) = entry.parameter_file.as_ref() {
-      provided_files.push(parameter_file);
-    }
-    let default_files = [
-      &"openai.json".into(),
-      &"openai-parameters.json".into(),
-      &"openai_parameters.json".into(),
-      &"openai-parameters".into(),
-      &"openai_parameters".into(),
-      &"openai.config.json".into(),
-    ];
-    for file in provided_files.into_iter().chain(default_files.into_iter()) {
-      match Parameter::from_file(file) {
-        Ok(key) => return Ok(key),
-        Err(err) => info!(
-          "Failed to obtain the API request parameters from the file {file:?}: {err:?}"
-        ),
+    for path in [
+        entry.parameter_file.as_ref(),
+        Some(&"openai.json".into()),
+        Some(&"openai-parameters.json".into()),
+        Some(&"openai_parameters.json".into()),
+        Some(&"openai-parameters".into()),
+        Some(&"openai_parameters".into()),
+        Some(&"openai.config.json".into()),
+      ]
+      .into_iter()
+      .flatten()
+    {
+      let source = &format!("the file {path:?}");
+      match Parameter::from_file(path) {
+        Ok(parameter) => return parameter.post_fetch_ok(source),
+        Err(err) => debug!("Failed to obtain the API request parameters from {source}: {err:?}"),
       }
     }
     Err(Error::msg("Failed to fetch the API request parameters"))
