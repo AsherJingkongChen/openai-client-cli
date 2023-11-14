@@ -13,9 +13,9 @@ pub use clap::Parser;
 /// The main entry-point for the program.
 #[derive(Parser)]
 #[command(
-  about,
   author,
-  bin_name = "openai",
+  about,
+  bin_name = "openai-client",
   help_template = "\
 {before-help}\
 {name} {version} by {author}
@@ -25,7 +25,6 @@ pub use clap::Parser;
 
 {all-args}\
 {after-help}",
-  name = "openai",
   version,
   next_line_help = true,
 )]

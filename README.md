@@ -30,14 +30,17 @@ cargo install openai-client-cli
 git clone --recurse-submodules https://github.com/AsherJingkongChen/openai-client-cli.git
 cd openai-client-cli
 ```
+
 2. [Install](https://www.rust-lang.org/tools/install) Rust toolchain manager: `rustup`
 ```shell
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
+
 3. Install Rust toolchain (1.70.0)
 ```shell
 rustup toolchain install 1.70.0
 ```
+
 4. Build in release mode
 ```shell
 cargo build --release
@@ -45,6 +48,7 @@ cargo build --release
 ```shell
 cargo b -r
 ```
+
 5. Add binary directory to environment variable `$PATH`
 ```shell
 export PATH='$PATH:target/release'
@@ -57,11 +61,12 @@ The command runs everytime when a session is launched.
 ## Usage
 
 ### Show manual
-How-to:
+Commands:
 ```shell
 openai --help
 ```
 ```shell
 openai -h
 ```
+
 Preview: [link](https://github.com/AsherJingkongChen/openai-client-cli/blob/master/docs/manual-help.md)

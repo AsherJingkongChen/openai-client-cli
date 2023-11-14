@@ -23,7 +23,7 @@ version = "0.1.1"
 doctest = false
 
 [[bin]]
-name = "openai"
+name = "openai-client"
 path = "src/main.rs"
 
 [dependencies]
