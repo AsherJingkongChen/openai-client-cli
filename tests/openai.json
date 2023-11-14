@@ -3,7 +3,7 @@
   "messages": [
     {
       "role": "system",
-      "content": "You are a helpful JSON assistant."
+      "content": "You are a helpful assistant."
     },
     {
       "role": "user",

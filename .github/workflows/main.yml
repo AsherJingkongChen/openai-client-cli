@@ -17,6 +17,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: recursive
 
     - name: Install Rust toolchain v1.70.0 (MSRV)
       uses: actions-rs/toolchain@v1
@@ -38,5 +40,5 @@ jobs:
 
     - name: Run doc-tests
       run: |
-        cargo +nightly test\
+        cargo +nightly test \
         --doc
