@@ -53,7 +53,7 @@ The program will attempt the following steps to obtain a valid API key:
     help = "\
 The HTTP method used for the API request.
 The program will attempt the following steps to determine a valid HTTP method:
- 1. Read the argument <METHOD>.
+ 1. Read the value of argument <METHOD>.
  2. If the `parameter` object is successfully fetched from either
     <PARAM_FILE_PATH> or one of the default paths, set <METHOD> to `POST`.
  3. Otherwise, set <METHOD> to `GET`.
@@ -89,7 +89,7 @@ The program will attempt the following steps to obtain a valid organization ID:
 The file path where the API response will be stored.
 The program will attempt the following steps to successfully store the response:
  1. Export the output to the provided file path <OUTPUT_FILE_PATH>.
- 2. Export the output to stdout (to the terminal or piped to another program).
+ 2. Export the output to the standard output.
  3. Exit the program with a non-zero return code.
 ",
     long,
@@ -191,7 +191,10 @@ impl Entry {
       .parse()?;
     info!("Resolving the API response in the content type: {content_type:?}");
 
-    let output_target = if output.is_file() { "the file" } else { "stdout" };
+    let exporting_message = format!(
+      "Exporting the output to the {}",
+      if output.is_file() { "file" } else { "standard output" },
+    );
 
     match content_type.subtype() {
       mime::JSON => {
@@ -226,7 +229,7 @@ impl Entry {
         } else {
           let response_json = response_json.unwrap();
           let mut output = output.value();
-          info!("Exporting the output to {output_target}");
+          info!(exporting_message);
           output.write_all(response_json.as_bytes())?;
           Ok(())
         }
@@ -234,7 +237,7 @@ impl Entry {
       mime::EVENT_STREAM => {
         status_error?; // should not be an error
 
-        info!("Exporting the output to {output_target}");
+        info!(exporting_message);
         let mut stream = response.bytes_stream().eventsource();
         let mut output = output.value();
         while let Some(chunk) = stream.next().await {

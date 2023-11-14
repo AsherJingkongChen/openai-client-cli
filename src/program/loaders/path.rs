@@ -22,7 +22,7 @@ impl FromStr for Path {
 
 impl Loader<String> for Path {
   fn fetch(entry: &Entry) -> Result<Self> {
-    let source = "the command line arguments";
+    let source = "the program arguments";
     match Path::from_str(&entry.path) {
       Ok(path) => {
         info!(

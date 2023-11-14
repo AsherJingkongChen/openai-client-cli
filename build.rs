@@ -14,7 +14,7 @@ mod openai_openapi {
   pub fn build() -> Result<()>
   {
     if env::var("DOCS_RS").is_ok_and(|v| v == "1") {
-      println!("cargo:warning=Skipping build script for docs.rs");
+      println!("cargo:warning=Skipping openai_openapi::build for docs.rs");
       return Ok(());
     }
     let manifest_file = "external/openai-openapi/openapi.yaml";

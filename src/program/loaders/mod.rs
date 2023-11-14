@@ -10,7 +10,7 @@ pub use method::*;
 pub mod organization;
 pub use organization::*;
 
-/// Output channel loader
+/// Output writer loader
 pub mod output;
 pub use output::*;
 

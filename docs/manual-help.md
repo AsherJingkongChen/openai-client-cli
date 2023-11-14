@@ -25,7 +25,7 @@ Options:
   -m, --method <METHOD>
           The HTTP method used for the API request.
           The program will attempt the following steps to determine a valid HTTP method:
-           1. Read the argument <METHOD>.
+           1. Read the value of argument <METHOD>.
            2. If the `parameter` object is successfully fetched from either
               <PARAM_FILE_PATH> or one of the default paths, set <METHOD> to `POST`.
            3. Otherwise, set <METHOD> to `GET`.
