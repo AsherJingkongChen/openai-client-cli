@@ -1,8 +1,8 @@
 ```md
-openai 0.1.0 by Asher Jingkong Chen
+openai-client-cli 0.1.1 by Asher Jingkong Chen
 OpenAI API client CLI
 
-Usage: openai [OPTIONS] <PATH>
+Usage: openai-client [OPTIONS] <PATH>
 
 Arguments:
   <PATH>
@@ -25,8 +25,8 @@ Options:
   -m, --method <METHOD>
           The HTTP method used for the API request.
           The program will attempt the following steps to determine a valid HTTP method:
-           1. Read the argument value <METHOD>.
-           2. If the `parameter` object is fetched successfully from either
+           1. Read the argument <METHOD>.
+           2. If the `parameter` object is successfully fetched from either
               <PARAM_FILE_PATH> or one of the default paths, set <METHOD> to `POST`.
            3. Otherwise, set <METHOD> to `GET`.
           
@@ -45,7 +45,7 @@ Options:
           The file path where the API response will be stored.
           The program will attempt the following steps to successfully store the response:
            1. Export the output to the provided file path <OUTPUT_FILE_PATH>.
-           2. Export the output to stdout (to the terminal or piped to another program).
+           2. Export the output to the standard output.
            3. Exit the program with a non-zero return code.
           
   -p, --parameter-file <PARAM_FILE_PATH>
