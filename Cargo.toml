@@ -1,11 +1,17 @@
 [package]
 name = "openai-client-cli"
 authors = ["Asher Jingkong Chen"]
-categories = ["openai", "api"]
+categories = [
+  "api-bindings",
+  "command-line-interface",
+  "command-line-utilities",
+  "multimedia",
+  "parsing",
+]
 description = "OpenAI API client CLI"
 documentation = "https://docs.rs/openai-client-cli"
 edition = "2021"
-keywords = ["openai", "api", "client", "cli", "chatgpt", "gpt"]
+keywords = ["openai", "api", "client", "cli", "chatgpt"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/AsherJingkongChen/openai-client-cli.git"

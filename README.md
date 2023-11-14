@@ -1,4 +1,8 @@
 # OpenAI Client CLI
+[<img alt="crates.io" src="https://img.shields.io/crates/v/openai-client-cli.svg?color=fe7d37&logo=rust" height="20">](https://crates.io/crates/openai-client-cli)
+[<img alt="docs.rs" src="https://docs.rs/openai-client-cli/badge.svg" height="20">](https://docs.rs/openai-client-cli/)
+[<img alt="GitHub Actions" src="https://github.com/AsherJingkongChen/openai-client-cli/actions/workflows/main.yml/badge.svg" height="20">](https://github.com/AsherJingkongChen/openai-client-cli/actions/workflows/main.yml)
+
 ```yaml
 Authors: Asher Jingkong Chen
 Description: OpenAI API client CLI
