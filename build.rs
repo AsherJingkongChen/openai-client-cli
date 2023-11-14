@@ -3,7 +3,7 @@ use anyhow::Result;
 mod openai_openapi {
   use crate::Result;
   use regex::Regex;
-  use std::{fs::{File, self}, path::Path};
+  use std::{env, fs::{File, self}, path::Path};
   use serde::Deserialize;
 
   #[derive(Deserialize)]
@@ -13,6 +13,10 @@ mod openai_openapi {
 
   pub fn build() -> Result<()>
   {
+    if env::var("DOCS_RS").is_ok_and(|v| v == "1") {
+      eprintln!("Skipping build script for docs.rs");
+      return Ok(());
+    }
     let manifest_file = "external/openai-openapi/openapi.yaml";
     let asset_file = "assets/openai-openapi-paths-regex";
     println!("cargo:rerun-if-changed={manifest_file}");
