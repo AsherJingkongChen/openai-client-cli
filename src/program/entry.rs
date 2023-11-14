@@ -229,7 +229,7 @@ impl Entry {
         } else {
           let response_json = response_json.unwrap();
           let mut output = output.value();
-          info!(exporting_message);
+          info!("{}", exporting_message);
           output.write_all(response_json.as_bytes())?;
           Ok(())
         }
@@ -237,7 +237,7 @@ impl Entry {
       mime::EVENT_STREAM => {
         status_error?; // should not be an error
 
-        info!(exporting_message);
+        info!("{}", exporting_message);
         let mut stream = response.bytes_stream().eventsource();
         let mut output = output.value();
         while let Some(chunk) = stream.next().await {
