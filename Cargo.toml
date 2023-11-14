@@ -32,6 +32,7 @@ clap = { version = "4.4.7", features = ["derive"] }
 eventsource-stream = "0.2.3"
 futures-util = "0.3.29"
 http = "0.2.9"
+mime = "0.3.17"
 regex = "1.10.2"
 reqwest = { version = "0.11.22", features = ["json", "stream"] }
 serde = { version = "1.0.190", features = ["derive"] }

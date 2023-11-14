@@ -684,6 +684,7 @@ dependencies = [
  "eventsource-stream",
  "futures-util",
  "http",
+ "mime",
  "regex",
  "reqwest",
  "serde",

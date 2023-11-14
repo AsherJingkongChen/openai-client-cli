@@ -3,9 +3,10 @@ use clap::{arg, command};
 use eventsource_stream::Eventsource;
 use futures_util::StreamExt;
 use http::header::CONTENT_TYPE;
+use mime::Mime;
 use std::path::PathBuf;
 use std::io::stderr;
-use tracing::{debug, info, Level};
+use tracing::{info, Level};
 
 #[doc(hidden)]
 pub use clap::Parser;
@@ -179,24 +180,21 @@ impl Entry {
     let client = OpenAIClient::new(key, organization);
     let request = OpenAIRequest::new(method, path, self._parameter)?;
     let response = client.send(request).await?;
-    debug!("\n{:#?}", response);
+    // debug!("\n{:#?}", response);
 
     let status_error = response.error_for_status_ref().map(|_| ());
-    let content_type = response
+    let content_type: Mime = response
       .headers()
       .get(CONTENT_TYPE)
       .ok_or(Error::msg("The API response does not contain the header `Content-Type`"))?
-      .to_str()
-      .unwrap_or("unknown");
-    info!(
-      "Resolving the API response in the content type: {:?}",
-      content_type,
-    );
+      .to_str()?
+      .parse()?;
+    info!("Resolving the API response in the content type: {content_type:?}");
 
     let output_target = if output.is_file() { "the file" } else { "stdout" };
 
-    match content_type {
-      "application/json" => {
+    match content_type.subtype() {
+      mime::JSON => {
         let response_json = response
           .json::<serde_json::Value>()
           .await
@@ -233,7 +231,7 @@ impl Entry {
           Ok(())
         }
       },
-      "text/event-stream" => {
+      mime::EVENT_STREAM => {
         status_error?; // should not be an error
 
         info!("Exporting the output to {output_target}");
@@ -257,8 +255,8 @@ impl Entry {
         }
         Ok(())
       },
-      unknown_type => Err(Error::msg(format!(
-        "Failed to resolve API response: {unknown_type:?} is an invalid format"
+      _ => Err(Error::msg(format!(
+        "Failed to resolve API response: {content_type:?} is an invalid format"
       ))),
     }
   }
