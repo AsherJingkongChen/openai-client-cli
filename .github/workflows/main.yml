@@ -40,5 +40,5 @@ jobs:
 
     - name: Run doc-tests
       run: |
-        cargo +nightly test\
+        cargo +nightly test \
         --doc
