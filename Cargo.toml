@@ -16,14 +16,14 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/AsherJingkongChen/openai-client-cli.git"
 resolver = "2"
-rust-version = "1.70.0"
-version = "0.1.0"
+rust-version = "1.72.0"
+version = "0.1.1"
 
 [lib]
 doctest = false
 
 [[bin]]
-name = "openai"
+name = "openai-client"
 path = "src/main.rs"
 
 [dependencies]
@@ -32,6 +32,7 @@ clap = { version = "4.4.7", features = ["derive"] }
 eventsource-stream = "0.2.3"
 futures-util = "0.3.29"
 http = "0.2.9"
+mime = "0.3.17"
 regex = "1.10.2"
 reqwest = { version = "0.11.22", features = ["json", "stream"] }
 serde = { version = "1.0.190", features = ["derive"] }

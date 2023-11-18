@@ -20,10 +20,10 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Install Rust toolchain v1.70.0 (MSRV)
+    - name: Install Rust toolchain v1.72.0 (MSRV)
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.70.0
+        toolchain: 1.72.0
 
     - name: Install Rust toolchain nightly
       uses: actions-rs/toolchain@v1
@@ -32,11 +32,11 @@ jobs:
 
     - name: Check compilation
       run: |
-        cargo +1.70.0 check
+        cargo +1.72.0 check
 
     - name: Run tests
       run: |
-        cargo +1.70.0 test
+        cargo +1.72.0 test
 
     - name: Run doc-tests
       run: |

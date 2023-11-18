@@ -46,7 +46,7 @@ impl FromStr for Method {
 
 impl Loader<http::Method> for Method {
   fn fetch(entry: &Entry) -> Result<Self> {
-    let source_ok = "the command line arguments";
+    let source_ok = "the program arguments";
     match entry.method
       .as_ref()
       .ok_or(Error::msg("Not provided"))
@@ -55,16 +55,13 @@ impl Loader<http::Method> for Method {
       Ok(method) => method.post_fetch_ok(source_ok),
       Err(err) => {
         debug!("Failed to obtain the API request method from {source_ok}: {err:?}");
-        debug!(
-          "The API request parameters (dependency) were fetched {}successfully",
-          if entry._parameter.is_some() { "" } else { "un" },
-        );
-        let method = if entry._parameter.is_some() {
-          http::Method::POST
+        let (method, dep_status) = if entry._parameter.is_some() {
+          (Self::POST, "")
         } else {
-          http::Method::GET
+          (Self::GET, "un")
         };
-        Self(method).post_fetch_ok("the fallback option")
+        debug!("The API request parameters were fetched {dep_status}successfully");
+        method.post_fetch_ok("the fallback options")
       },
     }
   }

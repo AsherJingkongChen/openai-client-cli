@@ -3,9 +3,10 @@ use clap::{arg, command};
 use eventsource_stream::Eventsource;
 use futures_util::StreamExt;
 use http::header::CONTENT_TYPE;
+use mime::Mime;
 use std::path::PathBuf;
 use std::io::stderr;
-use tracing::{debug, info, Level};
+use tracing::{info, Level};
 
 #[doc(hidden)]
 pub use clap::Parser;
@@ -13,9 +14,9 @@ pub use clap::Parser;
 /// The main entry-point for the program.
 #[derive(Parser)]
 #[command(
-  about,
   author,
-  bin_name = "openai",
+  about,
+  bin_name = "openai-client",
   help_template = "\
 {before-help}\
 {name} {version} by {author}
@@ -25,7 +26,6 @@ pub use clap::Parser;
 
 {all-args}\
 {after-help}",
-  name = "openai",
   version,
   next_line_help = true,
 )]
@@ -53,7 +53,7 @@ The program will attempt the following steps to obtain a valid API key:
     help = "\
 The HTTP method used for the API request.
 The program will attempt the following steps to determine a valid HTTP method:
- 1. Read the argument <METHOD>.
+ 1. Read the value of argument <METHOD>.
  2. If the `parameter` object is successfully fetched from either
     <PARAM_FILE_PATH> or one of the default paths, set <METHOD> to `POST`.
  3. Otherwise, set <METHOD> to `GET`.
@@ -89,7 +89,7 @@ The program will attempt the following steps to obtain a valid organization ID:
 The file path where the API response will be stored.
 The program will attempt the following steps to successfully store the response:
  1. Export the output to the provided file path <OUTPUT_FILE_PATH>.
- 2. Export the output to stdout (to the terminal or piped to another program).
+ 2. Export the output to the standard output.
  3. Exit the program with a non-zero return code.
 ",
     long,
@@ -180,24 +180,24 @@ impl Entry {
     let client = OpenAIClient::new(key, organization);
     let request = OpenAIRequest::new(method, path, self._parameter)?;
     let response = client.send(request).await?;
-    debug!("\n{:#?}", response);
+    // debug!("\n{:#?}", response);
 
     let status_error = response.error_for_status_ref().map(|_| ());
-    let content_type = response
+    let content_type: Mime = response
       .headers()
       .get(CONTENT_TYPE)
       .ok_or(Error::msg("The API response does not contain the header `Content-Type`"))?
-      .to_str()
-      .unwrap_or("unknown");
-    info!(
-      "Resolving the API response in the content type: {:?}",
-      content_type,
+      .to_str()?
+      .parse()?;
+    info!("Resolving the API response in the content type: {content_type:?}");
+
+    let exporting_message = format!(
+      "Exporting the output to the {}",
+      if output.is_file() { "file" } else { "standard output" },
     );
 
-    let output_target = if output.is_file() { "the file" } else { "stdout" };
-
-    match content_type {
-      "application/json" => {
+    match content_type.subtype() {
+      mime::JSON => {
         let response_json = response
           .json::<serde_json::Value>()
           .await
@@ -229,15 +229,15 @@ impl Entry {
         } else {
           let response_json = response_json.unwrap();
           let mut output = output.value();
-          info!("Exporting the output to {output_target}");
+          info!("{}", exporting_message);
           output.write_all(response_json.as_bytes())?;
           Ok(())
         }
       },
-      "text/event-stream" => {
+      mime::EVENT_STREAM => {
         status_error?; // should not be an error
 
-        info!("Exporting the output to {output_target}");
+        info!("{}", exporting_message);
         let mut stream = response.bytes_stream().eventsource();
         let mut output = output.value();
         while let Some(chunk) = stream.next().await {
@@ -258,8 +258,8 @@ impl Entry {
         }
         Ok(())
       },
-      unknown_type => Err(Error::msg(format!(
-        "Failed to resolve API response: {unknown_type:?} is an invalid format"
+      _ => Err(Error::msg(format!(
+        "Failed to resolve API response: {content_type:?} is an invalid format"
       ))),
     }
   }

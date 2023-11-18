@@ -2,17 +2,17 @@ use crate::{Entry, Result, traits::*};
 use std::{fs::File, path::Path, io::{stdout, Write}};
 use tracing::{debug, info};
 
-/// The output channel.
+/// The output writer.
 pub struct Output(Box<dyn Write>, bool);
 
 impl Output {
-  /// Check if the output channel is a file; otherwise, it is stdout.
+  /// Check if the output writer is a file; otherwise, it is the standard output.
   pub fn is_file(&self) -> bool {
     self.1
   }
 
   fn post_fetch_ok(self, target: &str) -> Result<Self> {
-    info!("Successfully fetched the output channel into {target}");
+    info!("Successfully fetched the output writer to {target}");
     Ok(self)
   }
 }
@@ -32,10 +32,10 @@ impl Loader<Box<dyn Write>> for Output {
       let target = &format!("the file {path:?}");
       match Output::from_file(path) {
         Ok(output) => return output.post_fetch_ok(target),
-        Err(err) => debug!("Failed to create the output channel into {target}: {err:?}"),
+        Err(err) => debug!("Failed to create the output writer to {target}: {err:?}"),
       }
     }
-    Self(Box::new(stdout()), false).post_fetch_ok("stdout")
+    Self(Box::new(stdout()), false).post_fetch_ok("the standard output")
   }
   fn value(self) -> Box<dyn Write> {
     self.0
